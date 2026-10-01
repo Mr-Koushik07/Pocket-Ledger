@@ -80,6 +80,18 @@ function ClassicTabLayout() {
             ),
         }}
       />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: 'Reports',
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="doc.text" tintColor={color} size={24} />
+            ) : (
+              <Feather name="file-text" size={22} color={color} />
+            ),
+        }}
+      />
     </Tabs>
   );
 }

@@ -55,6 +55,8 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "expo-print": "~57.0.2",
+    "expo-sharing": "~57.0.22",
     "expo-sqlite": "~57.0.2"
   }
 }

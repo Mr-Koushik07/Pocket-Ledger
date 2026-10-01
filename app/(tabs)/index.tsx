@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import {
@@ -632,6 +633,7 @@ function AddExpenseModal({
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { expenses, loading, getCategoryInfo } = useExpenses();
   const [modalVisible, setModalVisible] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -727,9 +729,18 @@ export default function HomeScreen() {
             <Text style={styles.brand}>Pocket <Text style={styles.brandAccent}>Ledger</Text></Text>
             <Text style={styles.greeting}>Your money, in focus.</Text>
           </View>
-          <Pressable testID="add-expense-header" onPress={() => setModalVisible(true)} style={({ pressed }) => [styles.headerAdd, pressed && styles.pressed]}>
-            <Feather name="plus" size={20} color={palette.primaryForeground} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <Pressable
+              onPress={() => router.push('/reports')}
+              style={({ pressed }) => [styles.headerReportBtn, pressed && styles.pressed]}
+              hitSlop={6}
+            >
+              <Feather name="file-text" size={19} color={palette.foreground} />
+            </Pressable>
+            <Pressable testID="add-expense-header" onPress={() => setModalVisible(true)} style={({ pressed }) => [styles.headerAdd, pressed && styles.pressed]}>
+              <Feather name="plus" size={20} color={palette.primaryForeground} />
+            </Pressable>
+          </View>
         </View>
 
         {/* HERO CARD */}
@@ -949,6 +960,7 @@ const styles = StyleSheet.create({
   brand: { color: palette.foreground, fontFamily: 'Inter_700Bold', fontSize: 24, letterSpacing: -0.8 },
   brandAccent: { color: palette.primary },
   greeting: { color: palette.mutedForeground, fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3 },
+  headerReportBtn: { width: 44, height: 44, backgroundColor: palette.card, borderWidth: 1, borderColor: '#ECE8DE', borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   headerAdd: { width: 44, height: 44, backgroundColor: palette.foreground, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   heroCard: { backgroundColor: palette.foreground, borderRadius: 24, padding: 22, marginBottom: 30 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
