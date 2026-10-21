@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "expo start",
     "dev:local": "expo start",
+    "dev:tunnel": "expo start --tunnel",
     "start": "expo start",
+    "tunnel": "expo start --tunnel",
+    "build:apk": "npx eas-cli build -p android --profile preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -55,6 +58,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "expo-clipboard": "~57.0.2",
     "expo-print": "~57.0.2",
     "expo-sharing": "~57.0.22",
     "expo-sqlite": "~57.0.2"

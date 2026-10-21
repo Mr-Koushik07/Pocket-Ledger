@@ -24,21 +24,28 @@ Pocket Ledger combines daily expense tracking, multi-context segmentation (Perso
 - **Custom Contexts**: Create custom spheres on the fly (e.g., *Freelance*, *College*, *Startup*) with custom icons and local persistence.
 - Easily toggle contexts when adding expenses or filtering activity.
 
-### 👥 4. People & Peer-to-Peer Ledger ("Money Between You")
-- **Automated Balance Tracking**: Tag any expense or received amount with a person's name (e.g., *Rahul*, *Priya*).
-- **Zero-Math Settlement**: Automatically determines net balances:
-  - `owes you` (green/coral highlight)
-  - `you owe`
-  - `settled` (balanced to zero)
-- **Detailed Person Ledger**: Tap any person to inspect full bilateral transaction history, total amount paid, and total amount received.
+### ⚡ 5. Smart SMS & UPI Transaction Parser
+- **Zero-Manual-Entry Mode**: Simply copy or paste any bank or UPI transactional SMS (from PhonePe, Google Pay, Paytm, HDFC, SBI, ICICI, Axis, etc.).
+- **Automatic Entity Extraction**: Automatically extracts Amount, Inflow vs Outflow, Merchant / Payee, Bank Account / Card endings, and Transaction Reference.
+- **Smart Category Inference**: Automatically maps known merchants (Swiggy, Zomato, Starbucks $\rightarrow$ *Food*; Uber, Ola, IRCTC $\rightarrow$ *Transport*; AWS, GitHub, Vercel $\rightarrow$ *Developer*; Amazon, Flipkart $\rightarrow$ *Shopping*).
+- **Clipboard 1-Tap Paste**: Automatically reads and parses copied SMS text directly from the device clipboard.
+- **Batch SMS Import**: Paste an entire message thread to parse and bulk-import multiple transactions simultaneously.
 
-### 📝 5. Streamlined Expense Entry & Customization
+### 👥 6. People & PhonePe UPI Settlement ("Money Between You")
+- **Automated Balance Tracking**: Tag any expense or received amount with a person's name (e.g., *Rahul*, *Priya*).
+- **Zero-Math Settlement**: Automatically determines net balances (`owes you`, `you owe`, `settled`).
+- **1-Tap PhonePe Direct Payment**: When you owe someone money, tap **"Pay via PhonePe"** to open PhonePe with the recipient's UPI ID, name, amount, and note pre-filled.
+- **Settle Upon Payment**: Returning to Pocket Ledger automatically asks if the payment was completed to record the repayment without manual entry.
+- **UPI Payment Request Sharing**: When someone owes you money, tap **"Request via WhatsApp"** to generate an instant payment link with your personal UPI ID.
+- **Contact & Profile UPI Storage**: Save UPI IDs for individual contacts and configure your personal UPI ID for seamless reconciliation.
+
+### 📝 7. Streamlined Expense Entry & Customization
 - **Flexible Flow**: Mark transactions as `"I paid"` (expense) or `"I received"` (repayment / income).
 - **Date Picking**: One-tap date selection for *Today*, *Yesterday*, or custom dates via an interactive calendar modal.
 - **Custom Categories**: Built-in categories (*Food*, *Transport*, *Developer*, *Home*, *Shopping*, *Health*, *Other*) plus the ability to create new categories with a custom color palette.
 - **Haptic Feedback**: Native tactile response on transaction saves and destructive actions.
 
-### 📜 6. Activity & Filterable Ledger
+### 📜 8. Activity & Filterable Ledger
 - **Context Filters**: Seamlessly filter all past transactions by *All*, *Personal*, *Developer*, *Office*, or any custom sphere.
 - **Event Filter**: Filter by clicking any `#event` tag to calculate the exact subtotal for that event.
 - **Platform-Native Deletion**: Long-press or action icon to delete with native alerts on iOS/Android and immediate removal on Web.

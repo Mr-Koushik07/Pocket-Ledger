@@ -17,7 +17,7 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.navadeepdj.pocketledger"
+      "package": "com.kousicmarella.pocketledger"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -35,8 +35,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "4261d316-e484-4a43-9f03-9d7e8e402f36"
+        "projectId": "f3b81248-6444-47fb-b7f4-da5d15f7b364"
       }
-    }
+    },
+    "owner": "kousicmarella"
   }
 }

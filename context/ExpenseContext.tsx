@@ -53,6 +53,19 @@ export type Expense = {
 const STORAGE_KEY = '@pocket-ledger/expenses';
 const CUSTOM_CAT_KEY = '@pocket-ledger/custom_categories';
 const CUSTOM_CTX_KEY = '@pocket-ledger/custom_sub_contexts';
+const CONTACTS_KEY = '@pocket-ledger/person_contacts';
+const PROFILE_KEY = '@pocket-ledger/user_profile';
+
+export type PersonContact = {
+  name: string;
+  upiId: string;
+  phone?: string;
+};
+
+export type UserProfile = {
+  name: string;
+  upiId: string;
+};
 
 type Database = ReturnType<typeof SQLite.openDatabaseSync>;
 let database: Database | null = null;
@@ -83,6 +96,15 @@ function getDatabase() {
         key TEXT PRIMARY KEY NOT NULL,
         label TEXT NOT NULL,
         icon TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS person_contacts (
+        name TEXT PRIMARY KEY NOT NULL,
+        upi_id TEXT NOT NULL,
+        phone TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
       );
     `);
     try {
@@ -167,6 +189,44 @@ async function readCustomSubContexts(): Promise<SubContextItem[]> {
   return stored ? JSON.parse(stored) : [];
 }
 
+async function readPersonContacts(): Promise<Record<string, PersonContact>> {
+  const db = getDatabase();
+  if (db) {
+    try {
+      const rows = db.getAllSync<{ name: string; upi_id: string; phone: string }>(
+        'SELECT name, upi_id, phone FROM person_contacts',
+      );
+      const map: Record<string, PersonContact> = {};
+      for (const row of rows) {
+        map[row.name.toLowerCase()] = { name: row.name, upiId: row.upi_id, phone: row.phone };
+      }
+      return map;
+    } catch {
+      return {};
+    }
+  }
+  const stored = await AsyncStorage.getItem(CONTACTS_KEY);
+  return stored ? JSON.parse(stored) : {};
+}
+
+async function readUserProfile(): Promise<UserProfile> {
+  const db = getDatabase();
+  if (db) {
+    try {
+      const rows = db.getAllSync<{ key: string; value: string }>(
+        "SELECT key, value FROM app_settings WHERE key IN ('user_name', 'user_upi')",
+      );
+      const name = rows.find((r) => r.key === 'user_name')?.value || '';
+      const upiId = rows.find((r) => r.key === 'user_upi')?.value || '';
+      return { name, upiId };
+    } catch {
+      return { name: '', upiId: '' };
+    }
+  }
+  const stored = await AsyncStorage.getItem(PROFILE_KEY);
+  return stored ? JSON.parse(stored) : { name: '', upiId: '' };
+}
+
 async function writeWebExpenses(expenses: Expense[]) {
   if (Platform.OS === 'web') {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
@@ -200,14 +260,19 @@ type ExpenseContextValue = {
   expenses: Expense[];
   categories: CategoryItem[];
   subContexts: SubContextItem[];
+  personContacts: Record<string, PersonContact>;
+  userProfile: UserProfile;
   loading: boolean;
   addExpense: (input: AddExpenseInput) => Promise<void>;
+  addMultipleExpenses: (inputs: AddExpenseInput[]) => Promise<void>;
   updateExpense: (input: UpdateExpenseInput) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   addCategory: (item: CategoryItem) => Promise<void>;
   deleteCategory: (key: string) => Promise<void>;
   addSubContext: (item: SubContextItem) => Promise<void>;
   deleteSubContext: (key: string) => Promise<void>;
+  setPersonContact: (name: string, upiId: string, phone?: string) => Promise<void>;
+  setUserProfile: (profile: UserProfile) => Promise<void>;
   reload: () => Promise<void>;
   getCategoryInfo: (key: string) => CategoryItem;
 };
@@ -218,6 +283,8 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [customCategories, setCustomCategories] = useState<CategoryItem[]>([]);
   const [customSubContexts, setCustomSubContexts] = useState<SubContextItem[]>([]);
+  const [personContacts, setPersonContacts] = useState<Record<string, PersonContact>>({});
+  const [userProfile, setUserProfileState] = useState<UserProfile>({ name: '', upiId: '' });
   const [loading, setLoading] = useState(true);
 
   const categories = useMemo(() => {
@@ -231,14 +298,18 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const [exp, cats, ctxs] = await Promise.all([
+      const [exp, cats, ctxs, contacts, profile] = await Promise.all([
         readExpenses(),
         readCustomCategories(),
         readCustomSubContexts(),
+        readPersonContacts(),
+        readUserProfile(),
       ]);
       setExpenses(exp);
       setCustomCategories(cats);
       setCustomSubContexts(ctxs);
+      setPersonContacts(contacts);
+      setUserProfileState(profile);
     } finally {
       setLoading(false);
     }
@@ -402,6 +473,99 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     [customSubContexts],
   );
 
+  const addMultipleExpenses = useCallback(
+    async (inputs: AddExpenseInput[]) => {
+      if (inputs.length === 0) return;
+      const newExpenses: Expense[] = inputs.map((input) => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        amount: Number(input.amount),
+        category: input.category,
+        subContext: input.subContext ?? 'Personal',
+        eventTag: (input.eventTag ?? '').trim(),
+        note: input.note.trim(),
+        date: input.date ?? new Date().toISOString(),
+        direction: input.direction,
+        person: input.person.trim(),
+      }));
+
+      const db = getDatabase();
+      if (db) {
+        db.withTransactionSync(() => {
+          for (const expense of newExpenses) {
+            db.runSync(
+              'INSERT INTO expenses (id, amount, category, note, date, direction, person, sub_context, event_tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              expense.id,
+              expense.amount,
+              expense.category,
+              expense.note,
+              expense.date,
+              expense.direction,
+              expense.person,
+              expense.subContext,
+              expense.eventTag,
+            );
+          }
+        });
+      }
+      setExpenses((current) => [...newExpenses, ...current]);
+      await writeWebExpenses([...newExpenses, ...expenses]);
+    },
+    [expenses],
+  );
+
+  const setPersonContact = useCallback(
+    async (name: string, upiId: string, phone: string = '') => {
+      const cleanName = name.trim();
+      if (!cleanName) return;
+      const cleanUpi = upiId.trim();
+      const cleanPhone = phone.trim();
+
+      const db = getDatabase();
+      if (db) {
+        db.runSync(
+          'INSERT OR REPLACE INTO person_contacts (name, upi_id, phone) VALUES (?, ?, ?)',
+          cleanName,
+          cleanUpi,
+          cleanPhone,
+        );
+      }
+      const updated = {
+        ...personContacts,
+        [cleanName.toLowerCase()]: { name: cleanName, upiId: cleanUpi, phone: cleanPhone },
+      };
+      setPersonContacts(updated);
+      if (Platform.OS === 'web') {
+        await AsyncStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
+      }
+    },
+    [personContacts],
+  );
+
+  const setUserProfile = useCallback(
+    async (profile: UserProfile) => {
+      const cleanName = profile.name.trim();
+      const cleanUpi = profile.upiId.trim();
+
+      const db = getDatabase();
+      if (db) {
+        db.runSync(
+          "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('user_name', ?)",
+          cleanName,
+        );
+        db.runSync(
+          "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('user_upi', ?)",
+          cleanUpi,
+        );
+      }
+      const updated = { name: cleanName, upiId: cleanUpi };
+      setUserProfileState(updated);
+      if (Platform.OS === 'web') {
+        await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+      }
+    },
+    [],
+  );
+
   const getCategoryInfo = useCallback(
     (key: string) => {
       const found = categories.find((c) => c.key.toLowerCase() === key.toLowerCase());
@@ -415,14 +579,19 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       expenses,
       categories,
       subContexts,
+      personContacts,
+      userProfile,
       loading,
       addExpense,
+      addMultipleExpenses,
       updateExpense,
       deleteExpense,
       addCategory,
       deleteCategory,
       addSubContext,
       deleteSubContext,
+      setPersonContact,
+      setUserProfile,
       reload,
       getCategoryInfo,
     }),
@@ -430,14 +599,19 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       expenses,
       categories,
       subContexts,
+      personContacts,
+      userProfile,
       loading,
       addExpense,
+      addMultipleExpenses,
       updateExpense,
       deleteExpense,
       addCategory,
       deleteCategory,
       addSubContext,
       deleteSubContext,
+      setPersonContact,
+      setUserProfile,
       reload,
       getCategoryInfo,
     ],
